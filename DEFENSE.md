@@ -29,5 +29,5 @@
 - Activation bars перевірено скриптом (баланс `activate`/`deactivate`, відсутність обриву в гілці) і на відрендерених діаграмах SC-01 та SC-08; усі діаграми відрендерено mermaid-cli без помилок.
 - Не вирішено: рішення про STAFF, політику й індекс лишаються пропозиціями; ER із Завдання 1 не змінювалась.
 
-Здача: (а) гілка: https://github.com/aooxd/KPI_lab3/tree/lab3-sequence-diagrams  (PR: https://github.com/aooxd/KPI_lab3 );
+Здача: (а) гілка: https://github.com/aooxd/KPI_lab3/tree/lab3-sequence-diagrams  (PR: https://github.com/aooxd/KPI_lab3/pull/1 );
  (б) цей заповнений DEFENSE.
