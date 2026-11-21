@@ -1,0 +1,39 @@
+sequenceDiagram
+    autonumber
+    actor L as Бібліотекар
+    participant UI as LoanUI
+    participant LS as LoanService
+    participant RR as ReaderRepository<br/>(READER)
+    participant LR as LoanRepository<br/>(LOAN)
+    participant LP as LoanPolicy<br/>(конфігурація)
+    L->>+UI: ввести email читача oleg@example.com
+    UI->>+LS: findReader(email)
+    LS->>+RR: findByEmail(email)
+    RR-->>-LS: Reader(reader_id, full_name, email)
+    LS-->>-UI: ReaderCard
+    UI-->>L: показати full_name і email
+    L->>UI: обрати INV-00200 і підтвердити видачу
+    UI->>LS: submitLoan(reader_id, copy_id, requestedDueDate)
+    activate LS
+    LS->>+LR: hasOpenLoan(copy_id)
+    LR-->>-LS: busy
+    LS->>+LR: countOverdueLoans(reader_id, today)
+    LR-->>-LS: overdueCount
+    LS->>+LR: countOpenLoans(reader_id)
+    LR-->>-LS: openCount
+    LS->>+LP: getPolicy()
+    LP-->>-LS: defaultDays 14, minDays 1, maxDays 30, maxOpenLoans 5
+    alt 1. примірник уже виданий (FR-04)
+        LS-->>UI: LoanRefused(«Примірник уже виданий»)
+    else 2. є прострочена видача (FR-09)
+        LS-->>UI: LoanRefused(«Є прострочена видача»)
+    else 3. досягнуто ліміт відкритих видач (FR-10)
+        LS-->>UI: LoanRefused(«Досягнуто ліміт відкритих видач»)
+    else 4. термін поза межами minDays…maxDays (FR-08)
+        LS-->>UI: LoanRefused(«Некоректний термін»)
+    else порушень немає
+        Note over LS: далі як у SC-01
+    end
+    Note over LS,UI: показується лише перша причина за порядком FR-14
+    deactivate LS
+    UI-->>-L: показати причину відмови, видачу не створено

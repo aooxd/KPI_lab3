@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    actor L as Бібліотекар
+    participant UI as LoanUI
+    participant LS as LoanService
+    participant RR as ReaderRepository<br/>(READER)
+    L->>+UI: ввести email читача new@example.com
+    UI->>+LS: findReader(email)
+    LS->>+RR: findByEmail(email)
+    RR-->>-LS: null
+    alt читача знайдено
+        LS-->>UI: ReaderCard
+    else читача не знайдено (FR-02)
+        LS-->>UI: ReaderNotFound
+        Note over LS: LoanRepository не викликається, видача не створюється (FR-12)
+    end
+    deactivate LS
+    UI-->>L: «Читача не знайдено» і пропозиція перейти до реєстрації
+    opt бібліотекар обирає реєстрацію
+        L->>UI: відкрити реєстрацію читача
+        Note over L,UI: навігація до UC-03, після нього UC-04 починається знову
+    end
+    deactivate UI
