@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    actor LA as Бібліотекар А
+    actor LB as Бібліотекар Б
+    participant UA as LoanUI (сесія А)
+    participant UB as LoanUI (сесія Б)
+    participant LS as LoanService
+    participant LR as LoanRepository<br/>(LOAN)
+    Note over LA,LB: обидва вже знайшли свого читача й обрали INV-00123, як у SC-01
+    activate LS
+    activate LR
+    par Бібліотекар А підтверджує видачу
+        LA->>UA: підтвердити видачу INV-00123 читачу Іваненко Марія
+        activate UA
+        UA->>LS: submitLoan(reader_id_A, copy_id, null)
+        LS->>LR: hasOpenLoan(copy_id)
+        LR-->>LS: false
+        LS->>LR: insertLoan(reader_id_A, copy_id, loaned_at, due_date)
+        LR-->>LS: Loan(loan_id, returned_at = null)
+        LS-->>UA: LoanConfirmation
+        UA-->>LA: видачу оформлено
+        deactivate UA
+    and Бібліотекар Б підтверджує одночасно
+        LB->>UB: підтвердити видачу INV-00123 читачу Петренко Олег
+        activate UB
+        UB->>LS: submitLoan(reader_id_B, copy_id, null)
+        LS->>LR: hasOpenLoan(copy_id)
+        LR-->>LS: false
+        LS->>LR: insertLoan(reader_id_B, copy_id, loaned_at, due_date)
+        LR-->>LS: DuplicateOpenLoanError (унікальність copy_id при returned_at IS NULL)
+        LS-->>UB: LoanRefused(«Примірник уже виданий»)
+        UB-->>LB: показати відмову
+        deactivate UB
+    end
+    Note over LS,LR: рівно один insertLoan прийнято (FR-13), який саме, залежить від порядку обробки
+    deactivate LR
+    deactivate LS

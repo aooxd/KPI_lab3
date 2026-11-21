@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor L as Бібліотекар
+    participant UI as LoanUI
+    participant LS as LoanService
+    participant RR as ReaderRepository<br/>(READER)
+    participant LR as LoanRepository<br/>(LOAN)
+    participant LP as LoanPolicy<br/>(конфігурація)
+    L->>+UI: ввести email читача oleg@example.com
+    UI->>+LS: findReader(email)
+    LS->>+RR: findByEmail(email)
+    RR-->>-LS: Reader(reader_id, full_name, email)
+    LS-->>-UI: ReaderCard
+    UI-->>L: показати full_name і email
+    L->>UI: обрати INV-00200 і підтвердити видачу
+    UI->>LS: submitLoan(reader_id, copy_id, requestedDueDate)
+    activate LS
+    LS->>+LR: hasOpenLoan(copy_id)
+    LR-->>-LS: false
+    LS->>+LR: countOverdueLoans(reader_id, today)
+    LR-->>-LS: overdueCount
+    LS->>+LR: countOpenLoans(reader_id)
+    LR-->>-LS: openCount
+    LS->>+LP: getPolicy()
+    LP-->>-LS: defaultDays 14, minDays 1, maxDays 30, maxOpenLoans 5
+    alt читач має прострочену видачу (FR-09)
+        LS-->>UI: LoanRefused(«Є прострочена видача»)
+    else openCount не менший за maxOpenLoans (FR-10)
+        LS-->>UI: LoanRefused(«Досягнуто ліміт відкритих видач»)
+    else обмежень немає
+        Note over LS: далі як у SC-01
+    end
+    deactivate LS
+    UI-->>-L: показати причину відмови, видачу не створено

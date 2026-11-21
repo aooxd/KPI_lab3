@@ -1,0 +1,46 @@
+sequenceDiagram
+    autonumber
+    actor L as Бібліотекар
+    participant UI as LoanUI
+    participant LS as LoanService
+    participant RR as ReaderRepository<br/>(READER)
+    participant CR as CatalogRepository<br/>(BOOK, BOOK_COPY)
+    participant LR as LoanRepository<br/>(LOAN)
+    participant LP as LoanPolicy<br/>(конфігурація)
+    L->>+UI: ввести email читача maria@example.com
+    UI->>+LS: findReader(email)
+    LS->>+RR: findByEmail(email)
+    RR-->>-LS: Reader(reader_id, full_name, email)
+    LS-->>-UI: ReaderCard
+    UI-->>L: показати full_name і email
+    L->>UI: знайти книгу «Кобзар»
+    UI->>+LS: findBookCopies(title)
+    LS->>+CR: findCopiesByTitle(title)
+    CR-->>-LS: список BookCopy (copy_id, inventory_number, condition)
+    loop для кожного примірника книги (FR-03)
+        LS->>+LR: hasOpenLoan(copy_id)
+        LR-->>-LS: true або false
+    end
+    LS-->>-UI: CopyList з ознакою вільний або виданий
+    UI-->>L: список примірників зі станом
+    L->>UI: обрати INV-00123 і підтвердити видачу без зміни терміну
+    UI->>LS: submitLoan(reader_id, copy_id, requestedDueDate)
+    activate LS
+    LS->>+LR: hasOpenLoan(copy_id)
+    LR-->>-LS: false
+    LS->>+LR: countOverdueLoans(reader_id, today)
+    LR-->>-LS: 0
+    LS->>+LR: countOpenLoans(reader_id)
+    LR-->>-LS: 2
+    LS->>+LP: getPolicy()
+    LP-->>-LS: defaultDays 14, minDays 1, maxDays 30, maxOpenLoans 5
+    alt усі перевірки пройдено (FR-05, FR-06)
+        LS->>LS: calcDueDate(loaned_at, defaultDays)
+        LS->>+LR: insertLoan(reader_id, copy_id, loaned_at, due_date)
+        LR-->>-LS: Loan(loan_id, returned_at = null)
+        LS-->>UI: LoanConfirmation(inventory_number, title, full_name, due_date)
+    else хоча б одна перевірка не пройдена
+        LS-->>UI: LoanRefused(reason), далі SC-04…SC-09
+    end
+    deactivate LS
+    UI-->>-L: показати INV, назву книги, читача і термін повернення
